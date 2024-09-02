@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encrypt GPG</title>
+    <script src="https://cdn.jsdelivr.net/npm/openpgp@5.11.2/dist/openpgp.min.js" integrity="sha512-1V2NorcOKiHx6RNS4l6VXR19VETJ0rZ/FIFGKC5pEjy7SEcJe8I1JG4CneiY96MRdGefHX9rcGmNH6cy5HwOKA==" crossorigin="anonymous"></script>
+</head>
+<body>
+    <p>File</p>
+    <input id="file" type="file">
+    <p>Format</p>
+    <select id="format">
+        <option value="binary">Binary</option>
+        <option value="armored">Armored (ASCII)</option>
+    </select>
+    <p>Passphrase</p>
+    <input id="passphrase" type="password">
+    <button id="encrypt">Encrypt</button>
+    <script>
+        document.getElementById('encrypt').addEventListener('click', async function() {
+            try {
+                const file = document.getElementById('file').files[0];
+                const message = await openpgp.createMessage({ binary: new Uint8Array(await file.arrayBuffer()) });
+                const encryptedFile = await openpgp.encrypt({
+                    message,
+                    passwords: [document.getElementById('passphrase').value],
+                    format: document.getElementById('format').value
+                });
+
+                const downloadBlob = function(data, fileName) {
+                    const blob = new Blob([data]);
+                    const url = window.URL.createObjectURL(blob);
+                    downloadURL(url, fileName);
+                    setTimeout(function() {
+                        return window.URL.revokeObjectURL(url);
+                    }, 1000);
+                };
+                const downloadURL = function(data, fileName) {
+                    const a = document.createElement('a');
+                    a.href = data;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.style = 'display: none';
+                    a.click();
+                    a.remove();
+                };
+
+                downloadBlob(encryptedFile, `${file.name}.gpg`);
+            } catch {}
+        });
+    </script>
+</body>
+</html>
